@@ -89,19 +89,21 @@ try {
     // Merge all PDFs
     foreach ($filesToMerge as $fileInfo) {
         $pdfPath = $fileInfo['path'];
-        
+
         try {
             // Try to process the PDF directly first
             $pageCount = @$pdf->setSourceFile($pdfPath);
         } catch (Exception $e) {
             // Check if it's a compression error
-            if (strpos($e->getMessage(), 'compression') !== false || 
+            if (
+                strpos($e->getMessage(), 'compression') !== false ||
                 strpos($e->getMessage(), 'not supported') !== false ||
-                strpos($e->getMessage(), 'pdf-parser') !== false) {
-                
+                strpos($e->getMessage(), 'pdf-parser') !== false
+            ) {
+
                 // Try to convert with Ghostscript
                 $convertedPath = convertPdfWithGhostscript($pdfPath, $fileInfo['originalName']);
-                
+
                 if ($convertedPath) {
                     $pdfPath = $convertedPath;
                     $tempFiles[] = $convertedPath;
@@ -109,7 +111,7 @@ try {
                 } else {
                     throw new Exception(
                         'The file "' . $fileInfo['originalName'] . '" uses advanced PDF compression that cannot be processed. ' .
-                        'Please try re-saving it as PDF 1.4 compatible or using "Print to PDF" to create a simpler version.'
+                            'Please try re-saving it as PDF 1.4 compatible or using "Print to PDF" to create a simpler version.'
                     );
                 }
             } else {
@@ -171,7 +173,6 @@ try {
     $response['message'] = 'PDFs merged successfully';
     $response['downloadId'] = $downloadId;
     $response['filename'] = $outputFilename;
-
 } catch (Exception $e) {
     $response['message'] = $e->getMessage();
 }
@@ -186,7 +187,7 @@ function convertPdfWithGhostscript(string $inputPath, string $originalName): ?st
 {
     // Check if Ghostscript is available
     $gsPath = findGhostscript();
-    
+
     if (!$gsPath) {
         return null;
     }
@@ -197,7 +198,7 @@ function convertPdfWithGhostscript(string $inputPath, string $originalName): ?st
     // Build Ghostscript command to convert PDF to 1.4 compatible
     $command = sprintf(
         '%s -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dNOPAUSE -dQUIET -dBATCH ' .
-        '-dPDFSETTINGS=/prepress -sOutputFile=%s %s 2>&1',
+            '-dPDFSETTINGS=/prepress -sOutputFile=%s %s 2>&1',
         escapeshellcmd($gsPath),
         escapeshellarg($tempOutput),
         escapeshellarg($inputPath)
