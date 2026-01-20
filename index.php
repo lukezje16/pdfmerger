@@ -6,11 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF Merger Tool</title>
 
-    <!-- Google Fonts - DM Sans for a clean modern look -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-
     <!-- Bootstrap 5.3 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
@@ -28,20 +23,20 @@
 </head>
 
 <body>
-    <!-- Animated Background -->
+    <!-- Background -->
     <div class="bg-pattern"></div>
 
     <div class="container py-5">
         <div class="row justify-content-center">
-            <div class="col-lg-10 col-xl-8">
+            <div class="col-lg-10 col-xl-9">
 
                 <!-- Header -->
                 <header class="text-center mb-5">
-                    <div class="logo-icon mb-3">
+                    <div class="logo-icon mb-4">
                         <i class="bi bi-file-earmark-pdf"></i>
                     </div>
-                    <h1 class="display-5 fw-bold mb-2">PDF Merger</h1>
-                    <p class="lead text-muted">Combine multiple PDF files into one. Drag to reorder.</p>
+                    <h1>PDF Merger</h1>
+                    <p class="lead">Combine multiple PDF files into a single document.<br>Upload your files, arrange them in order, then merge.</p>
                 </header>
 
                 <!-- Main Card -->
@@ -51,37 +46,35 @@
                     <div class="upload-zone" id="uploadZone">
                         <input type="file" id="fileInput" multiple accept=".pdf,application/pdf" class="d-none">
                         <div class="upload-content">
-                            <div class="upload-icon">
-                                <i class="bi bi-cloud-arrow-up"></i>
-                            </div>
-                            <h4>Drop PDF files here</h4>
-                            <p class="text-muted mb-3">or click to browse</p>
-                            <button type="button" class="btn btn-outline-primary btn-lg" id="browseBtn">
-                                <i class="bi bi-folder2-open me-2"></i>Select Files
+                            <i class="bi bi-cloud-arrow-up upload-icon"></i>
+                            <h4>Drop your PDF files here</h4>
+                            <p>or click anywhere in this box to browse your computer</p>
+                            <button type="button" class="btn btn-primary btn-lg" id="browseBtn">
+                                <i class="bi bi-folder2-open me-2"></i>Select PDF Files
                             </button>
                         </div>
                         <div class="upload-hint">
-                            <i class="bi bi-info-circle me-1"></i>
-                            Max 50MB per file • PDF files only
+                            <i class="bi bi-info-circle me-2"></i>
+                            Maximum 50MB per file &bull; Only PDF files accepted
                         </div>
                     </div>
 
                     <!-- File List -->
                     <div class="file-list-container" id="fileListContainer" style="display: none;">
                         <div class="file-list-header">
-                            <h5 class="mb-0">
+                            <h5>
                                 <i class="bi bi-list-ol me-2"></i>
-                                Files to Merge
+                                Your Files
                                 <span class="badge bg-primary ms-2" id="fileCount">0</span>
                             </h5>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" id="addMoreBtn">
-                                <i class="bi bi-plus-lg me-1"></i>Add More
+                            <button type="button" class="btn btn-outline-secondary" id="addMoreBtn">
+                                <i class="bi bi-plus-lg me-2"></i>Add More Files
                             </button>
                         </div>
 
-                        <p class="text-muted small mb-3">
-                            <i class="bi bi-grip-vertical me-1"></i>
-                            Drag items to reorder them
+                        <p class="mb-4" style="color: #d1d5db; font-size: 1.1rem;">
+                            <i class="bi bi-grip-vertical me-2"></i>
+                            <strong>Tip:</strong> Drag and drop files to change the order. Files will be merged from top to bottom.
                         </p>
 
                         <ul class="file-list" id="fileList">
@@ -91,10 +84,10 @@
                         <!-- Action Buttons -->
                         <div class="action-buttons">
                             <button type="button" class="btn btn-outline-danger" id="clearAllBtn">
-                                <i class="bi bi-trash3 me-2"></i>Clear All
+                                <i class="bi bi-trash3 me-2"></i>Clear All Files
                             </button>
                             <button type="button" class="btn btn-primary btn-lg" id="mergeBtn" disabled>
-                                <i class="bi bi-layers me-2"></i>Merge PDFs
+                                <i class="bi bi-layers me-2"></i>Merge All PDFs
                                 <span class="spinner-border spinner-border-sm ms-2 d-none" id="mergeSpinner"></span>
                             </button>
                         </div>
@@ -104,9 +97,9 @@
 
                 <!-- Footer -->
                 <footer class="text-center mt-5">
-                    <p class="text-muted small">
-                        <i class="bi bi-shield-check me-1"></i>
-                        Files are processed securely and automatically deleted after 1 hour
+                    <p style="color: #9ca3af; font-size: 1rem;">
+                        <i class="bi bi-shield-check me-2"></i>
+                        Your files are processed securely and automatically deleted after 1 hour
                     </p>
                 </footer>
 
