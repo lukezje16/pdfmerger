@@ -6,7 +6,8 @@
 /* CSS Variables */
 :root {
   /* Clean, readable system fonts */
-  --font-primary: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-primary: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
   --font-mono: "SF Mono", "Consolas", "Monaco", monospace;
 
   /* Brighter background for better contrast */
@@ -532,7 +533,8 @@ footer p {
 
 /* Progress Animation for Upload */
 @keyframes uploadPulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.6;
   }
   50% {

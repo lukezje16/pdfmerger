@@ -3,6 +3,7 @@
 /**
  * PDF Merge Handler
  * Merges multiple PDFs using FPDI in user-defined order
+ * Includes Ghostscript fallback for compressed PDFs
  */
 
 session_start();
@@ -16,6 +17,7 @@ use setasign\Fpdi\Fpdi;
 define('MERGED_DIR', __DIR__ . '/merged/');
 define('UPLOAD_DIR', __DIR__ . '/uploads/');
 define('FILE_EXPIRY', 3600); // 1 hour
+define('TEMP_DIR', __DIR__ . '/uploads/temp/');
 
 // Initialize response
 $response = [
@@ -59,19 +61,18 @@ try {
         $filesToMerge[] = $fileInfo;
     }
 
-    // Create merged directory if needed
+    // Create directories if needed
     if (!is_dir(MERGED_DIR)) {
-        if (!mkdir(MERGED_DIR, 0755, true)) {
-            throw new Exception('Failed to create output directory');
-        }
+        mkdir(MERGED_DIR, 0755, true);
+    }
+    if (!is_dir(TEMP_DIR)) {
+        mkdir(TEMP_DIR, 0755, true);
     }
 
     // Create session-based merged directory
     $sessionMergedDir = MERGED_DIR . $_SESSION['upload_id'] . '/';
     if (!is_dir($sessionMergedDir)) {
-        if (!mkdir($sessionMergedDir, 0755, true)) {
-            throw new Exception('Failed to create session output directory');
-        }
+        mkdir($sessionMergedDir, 0755, true);
     }
 
     // Increase memory limit for large merges
@@ -82,22 +83,49 @@ try {
     $pdf = new Fpdi();
     $pdf->SetAutoPageBreak(false);
 
+    // Track temp files for cleanup
+    $tempFiles = [];
+
     // Merge all PDFs
     foreach ($filesToMerge as $fileInfo) {
+        $pdfPath = $fileInfo['path'];
+        
         try {
-            $pageCount = $pdf->setSourceFile($fileInfo['path']);
-
-            for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
-                $templateId = $pdf->importPage($pageNo);
-                $size = $pdf->getTemplateSize($templateId);
-
-                // Add page with same orientation and size as source
-                $orientation = ($size['width'] > $size['height']) ? 'L' : 'P';
-                $pdf->AddPage($orientation, [$size['width'], $size['height']]);
-                $pdf->useTemplate($templateId, 0, 0, $size['width'], $size['height']);
-            }
+            // Try to process the PDF directly first
+            $pageCount = @$pdf->setSourceFile($pdfPath);
         } catch (Exception $e) {
-            throw new Exception('Error processing "' . $fileInfo['originalName'] . '": ' . $e->getMessage());
+            // Check if it's a compression error
+            if (strpos($e->getMessage(), 'compression') !== false || 
+                strpos($e->getMessage(), 'not supported') !== false ||
+                strpos($e->getMessage(), 'pdf-parser') !== false) {
+                
+                // Try to convert with Ghostscript
+                $convertedPath = convertPdfWithGhostscript($pdfPath, $fileInfo['originalName']);
+                
+                if ($convertedPath) {
+                    $pdfPath = $convertedPath;
+                    $tempFiles[] = $convertedPath;
+                    $pageCount = $pdf->setSourceFile($pdfPath);
+                } else {
+                    throw new Exception(
+                        'The file "' . $fileInfo['originalName'] . '" uses advanced PDF compression that cannot be processed. ' .
+                        'Please try re-saving it as PDF 1.4 compatible or using "Print to PDF" to create a simpler version.'
+                    );
+                }
+            } else {
+                throw $e;
+            }
+        }
+
+        // Import all pages from this PDF
+        for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+            $templateId = $pdf->importPage($pageNo);
+            $size = $pdf->getTemplateSize($templateId);
+
+            // Add page with same orientation and size as source
+            $orientation = ($size['width'] > $size['height']) ? 'L' : 'P';
+            $pdf->AddPage($orientation, [$size['width'], $size['height']]);
+            $pdf->useTemplate($templateId, 0, 0, $size['width'], $size['height']);
         }
     }
 
@@ -109,6 +137,13 @@ try {
 
     // Save merged PDF
     $pdf->Output('F', $outputPath);
+
+    // Clean up temp files
+    foreach ($tempFiles as $tempFile) {
+        if (file_exists($tempFile)) {
+            unlink($tempFile);
+        }
+    }
 
     // Store download info in session
     if (!isset($_SESSION['merged'])) {
@@ -136,7 +171,7 @@ try {
     $response['message'] = 'PDFs merged successfully';
     $response['downloadId'] = $downloadId;
     $response['filename'] = $outputFilename;
-    $response['pageCount'] = $pdf->setSourceFile($outputPath);
+
 } catch (Exception $e) {
     $response['message'] = $e->getMessage();
 }
@@ -144,14 +179,101 @@ try {
 echo json_encode($response);
 
 /**
+ * Try to convert PDF using Ghostscript to remove unsupported compression
+ * Returns the path to converted file, or false if Ghostscript is not available
+ */
+function convertPdfWithGhostscript(string $inputPath, string $originalName): ?string
+{
+    // Check if Ghostscript is available
+    $gsPath = findGhostscript();
+    
+    if (!$gsPath) {
+        return null;
+    }
+
+    // Create temp output path
+    $tempOutput = TEMP_DIR . uniqid('gs_') . '.pdf';
+
+    // Build Ghostscript command to convert PDF to 1.4 compatible
+    $command = sprintf(
+        '%s -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dNOPAUSE -dQUIET -dBATCH ' .
+        '-dPDFSETTINGS=/prepress -sOutputFile=%s %s 2>&1',
+        escapeshellcmd($gsPath),
+        escapeshellarg($tempOutput),
+        escapeshellarg($inputPath)
+    );
+
+    // Execute Ghostscript
+    exec($command, $output, $returnCode);
+
+    // Check if conversion was successful
+    if ($returnCode === 0 && file_exists($tempOutput) && filesize($tempOutput) > 0) {
+        return $tempOutput;
+    }
+
+    // Clean up failed attempt
+    if (file_exists($tempOutput)) {
+        unlink($tempOutput);
+    }
+
+    return null;
+}
+
+/**
+ * Find Ghostscript executable
+ */
+function findGhostscript(): ?string
+{
+    // Common Ghostscript paths
+    $possiblePaths = [
+        'gs',                           // Linux/Mac (in PATH)
+        '/usr/bin/gs',                  // Linux
+        '/usr/local/bin/gs',            // Linux/Mac homebrew
+        '/opt/local/bin/gs',            // MacPorts
+        'C:\\Program Files\\gs\\gs9.56.1\\bin\\gswin64c.exe',  // Windows
+        'C:\\Program Files (x86)\\gs\\gs9.56.1\\bin\\gswin32c.exe',
+    ];
+
+    foreach ($possiblePaths as $path) {
+        // Check if command exists
+        if ($path === 'gs') {
+            exec('which gs 2>/dev/null', $output, $returnCode);
+            if ($returnCode === 0) {
+                return 'gs';
+            }
+            // Try Windows
+            exec('where gs 2>nul', $output, $returnCode);
+            if ($returnCode === 0) {
+                return 'gs';
+            }
+        } elseif (file_exists($path)) {
+            return $path;
+        }
+    }
+
+    return null;
+}
+
+/**
  * Clean up files older than FILE_EXPIRY
  */
 function cleanupOldFiles(): void
 {
-    $directories = [UPLOAD_DIR, MERGED_DIR];
+    $directories = [UPLOAD_DIR, MERGED_DIR, TEMP_DIR];
 
     foreach ($directories as $baseDir) {
         if (!is_dir($baseDir)) {
+            continue;
+        }
+
+        // Clean files directly in temp dir
+        if ($baseDir === TEMP_DIR) {
+            $files = glob($baseDir . '*');
+            foreach ($files as $file) {
+                if (is_file($file) && time() - filemtime($file) > 300) { // 5 min for temp
+                    unlink($file);
+                }
+            }
             continue;
         }
 
