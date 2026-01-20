@@ -1,0 +1,22 @@
+# Dependencies
+/vendor/
+
+# Uploads and merged files (user data)
+/uploads/*
+!/uploads/.htaccess
+/merged/*
+!/merged/.htaccess
+
+# IDE and OS files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Composer
+composer.lock
+
+# Logs
+*.log

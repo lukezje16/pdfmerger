@@ -1,0 +1,16 @@
+{
+  "name": "pdfmerger/tool",
+  "description": "A simple PDF merging tool",
+  "type": "project",
+  "require": {
+    "php": ">=7.4",
+    "setasign/fpdf": "^1.8",
+    "setasign/fpdi": "^2.6"
+  },
+  "autoload": {
+    "psr-4": {}
+  },
+  "config": {
+    "optimize-autoloader": true
+  }
+}
