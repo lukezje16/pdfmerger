@@ -40,7 +40,28 @@
     mergeBtn: $("#mergeBtn"),
     mergeSpinner: $("#mergeSpinner"),
     clearAllBtn: $("#clearAllBtn"),
+    loadingOverlay: $("#loadingOverlay"),
+    loadingText: $("#loadingText"),
+    loadingSubtext: $("#loadingSubtext"),
   };
+
+  // =========================================
+  // Loading Overlay Functions
+  // =========================================
+  function showLoading(text = "Processing your files...", subtext = "This may take a moment") {
+    Elements.loadingText.text(text);
+    Elements.loadingSubtext.text(subtext);
+    Elements.loadingOverlay.addClass("active");
+  }
+
+  function hideLoading() {
+    Elements.loadingOverlay.removeClass("active");
+  }
+
+  function updateLoadingText(text, subtext) {
+    if (text) Elements.loadingText.text(text);
+    if (subtext) Elements.loadingSubtext.text(subtext);
+  }
 
   // =========================================
   // Toast Notifications
@@ -386,18 +407,23 @@
         showCancelButton: true,
         confirmButtonText: "Yes, merge them",
         cancelButtonText: "Cancel",
-        background: "#1a1f26",
-        color: "#e8eaed",
+        background: "#252a33",
+        color: "#ffffff",
       });
 
       if (!result.isConfirmed) return;
     }
 
-    // Start merging
+    // Start merging - show loading overlay
     State.isMerging = true;
     Elements.mergeBtn.prop("disabled", true);
     Elements.mergeSpinner.removeClass("d-none");
     Elements.fileListContainer.addClass("merge-loading");
+    
+    showLoading(
+      "Merging " + fileIds.length + " PDF files...",
+      "Please wait while we combine your documents"
+    );
 
     try {
       const response = await $.ajax({
@@ -406,6 +432,8 @@
         contentType: "application/json",
         data: JSON.stringify({ fileIds: fileIds }),
       });
+
+      hideLoading();
 
       if (response.success) {
         // Success - trigger download
@@ -427,14 +455,16 @@
         throw new Error(response.message);
       }
     } catch (error) {
+      hideLoading();
       Swal.fire({
         title: "Merge Failed",
         text: error.message || "An error occurred while merging PDFs",
         icon: "error",
-        background: "#1a1f26",
-        color: "#e8eaed",
+        background: "#252a33",
+        color: "#ffffff",
       });
     } finally {
+      hideLoading();
       State.isMerging = false;
       Elements.mergeBtn.prop("disabled", false);
       Elements.mergeSpinner.addClass("d-none");

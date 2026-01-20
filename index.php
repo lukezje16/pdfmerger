@@ -23,6 +23,16 @@
 </head>
 
 <body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loader-container">
+            <div class="loader-spinner"></div>
+            <div class="loader-flower"></div>
+        </div>
+        <div class="loading-text" id="loadingText">Processing your files...</div>
+        <div class="loading-subtext" id="loadingSubtext">This may take a moment</div>
+    </div>
+
     <!-- Background -->
     <div class="bg-pattern"></div>
 
