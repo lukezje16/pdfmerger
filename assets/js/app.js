@@ -496,20 +496,29 @@
      * Bind event listeners
      */
     function bindEvents() {
+        // Prevent file input clicks from bubbling
+        Elements.fileInput.on('click', (e) => {
+            e.stopPropagation();
+        });
+
         // Browse button click
         Elements.browseBtn.on('click', (e) => {
             e.stopPropagation();
-            Elements.fileInput.click();
+            Elements.fileInput.trigger('click');
         });
 
         // Upload zone click
-        Elements.uploadZone.on('click', () => {
-            Elements.fileInput.click();
+        Elements.uploadZone.on('click', (e) => {
+            // Don't trigger if clicking on child buttons or inputs
+            if (e.target === Elements.uploadZone[0] || $(e.target).closest('.upload-content').length) {
+                Elements.fileInput.trigger('click');
+            }
         });
 
         // Add more button
-        Elements.addMoreBtn.on('click', () => {
-            Elements.fileInput.click();
+        Elements.addMoreBtn.on('click', (e) => {
+            e.stopPropagation();
+            Elements.fileInput.trigger('click');
         });
 
         // File input change
